@@ -39,7 +39,7 @@ class PdType(object):
         raise NotImplementedError
     def pdfromflat(self, flat):
         return self.pdclass()(flat)
-    def pdfromlatent(self, latent_vector):
+    def pdfromlatent(self, latent_vector, init_scale, init_bias):
         raise NotImplementedError
     def param_shape(self):
         raise NotImplementedError
@@ -52,6 +52,9 @@ class PdType(object):
         return tf.placeholder(dtype=tf.float32, shape=prepend_shape+self.param_shape(), name=name)
     def sample_placeholder(self, prepend_shape, name=None):
         return tf.placeholder(dtype=self.sample_dtype(), shape=prepend_shape+self.sample_shape(), name=name)
+
+    def __eq__(self, other):
+        return (type(self) == type(other)) and (self.__dict__ == other.__dict__)
 
 class CategoricalPdType(PdType):
     def __init__(self, ncat):
@@ -77,6 +80,11 @@ class MultiCategoricalPdType(PdType):
         return MultiCategoricalPd
     def pdfromflat(self, flat):
         return MultiCategoricalPd(self.ncats, flat)
+
+    def pdfromlatent(self, latent, init_scale=1.0, init_bias=0.0):
+        pdparam = fc(latent, 'pi', self.ncats.sum(), init_scale=init_scale, init_bias=init_bias)
+        return self.pdfromflat(pdparam), pdparam
+
     def param_shape(self):
         return [sum(self.ncats)]
     def sample_shape(self):

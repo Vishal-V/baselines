@@ -10,7 +10,8 @@ if sys.version_info.major != 3:
 extras = {
     'test': [
         'filelock',
-        'pytest'
+        'pytest',
+        'atari-py'
     ],
     'bullet': [
         'pybullet',
@@ -27,7 +28,7 @@ setup(name='baselines',
       packages=[package for package in find_packages()
                 if package.startswith('baselines')],
       install_requires=[
-          'gym[mujoco,atari,classic_control,robotics]',
+          'gym',
           'scipy',
           'tqdm',
           'joblib',
@@ -47,9 +48,13 @@ setup(name='baselines',
 
 
 # ensure there is some tensorflow build with version above 1.4
-try:
-    from distutils.version import StrictVersion
-    import tensorflow
-    assert StrictVersion(re.sub(r'-rc\d+$', '', tensorflow.__version__)) >= StrictVersion('1.4.0')
-except ImportError:
-    assert False, "TensorFlow needed, of version above 1.4"
+import pkg_resources
+tf_pkg = None
+for tf_pkg_name in ['tensorflow', 'tensorflow-gpu']:
+    try:
+        tf_pkg = pkg_resources.get_distribution(tf_pkg_name)
+    except pkg_resources.DistributionNotFound:
+        pass
+assert tf_pkg is not None, 'TensorFlow needed, of version above 1.4'
+from distutils.version import StrictVersion
+assert StrictVersion(re.sub(r'-?rc\d+$', '', tf_pkg.version)) >= StrictVersion('1.4.0')
